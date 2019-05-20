@@ -8,6 +8,7 @@ const {
 } = require('enquirer')
 const puppeteer = require('puppeteer')
 const cron = require('node-cron')
+const moment = require('moment-timezone')
 
 if (!fs.pathExistsSync('credentials.json')) {
   console.error('ERROR: credentials.jsonが見つかりません。READMEを参考に入手してください。')
@@ -86,7 +87,6 @@ async function sync() {
 
   const data = []
 
-
   for (let i = 0; i < list.length; i++) {
     await page.mouse.move(list[i].x + 1, list[i].y + 1)
     await new Promise(res => setTimeout(res, 200))
@@ -116,12 +116,16 @@ async function sync() {
     }
   }
 
-  console.log('同期処理を実行しました:', new Date())
+  console.log('同期処理を実行しました:', moment(new Date()).tz("Asia/Tokyo").format())
 
   browser.close()
 }
 
-cron.schedule(config.get('cron'), sync)
+cron.schedule(config.get('cron'), sync, {
+  scheduled: true,
+  timezone: "Asia/Tokyo"
+})
+
 
 // 認証生成・既に存在する場合は更新
 async function authorize() {
