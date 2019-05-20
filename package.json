@@ -1,0 +1,16 @@
+{
+  "name": "dotmanager",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/mizucoffee/dotmanager.git",
+  "author": "Ritsuki Goto <develop@mizucoffee.net>",
+  "license": "MIT",
+  "dependencies": {
+    "config": "^3.1.0",
+    "enquirer": "^2.3.0",
+    "fs-extra": "^8.0.1",
+    "googleapis": "^40.0.0",
+    "node-cron": "^2.0.3",
+    "puppeteer": "^1.16.0"
+  }
+}

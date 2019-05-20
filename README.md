@@ -12,4 +12,11 @@ dotCampus管理システム(非公式)
 
 ## 注意
 このプロジェクトは一般の方を対象としていません。     
-最低でも、Google Calender API用のキーの取得、サーバーの用意、nodeの環境構築が必須です。
+最低でも、Google Calendar API用のキーの取得、サーバーの用意、nodeの環境構築が必須です。
+
+## 導入
+
+https://developers.google.com/tasks/quickstart/nodejs
+
+ENABLE THE GOOGLE CALENDAR API > DOWNLOAD CLIENT CONFIGURATION
+
