@@ -116,6 +116,8 @@ async function sync() {
     }
   }
 
+  console.log('同期処理を実行しました:', new Date())
+
   browser.close()
 }
 

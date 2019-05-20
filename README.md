@@ -19,4 +19,3 @@ dotCampus管理システム(非公式)
 https://developers.google.com/tasks/quickstart/nodejs
 
 ENABLE THE GOOGLE CALENDAR API > DOWNLOAD CLIENT CONFIGURATION
-
