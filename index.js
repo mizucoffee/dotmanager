@@ -45,6 +45,9 @@ async function sync() {
 
   const tasklistId = (await tasks.tasklists.list()).data.items.filter(i => i.title == 'dotCampus')[0].id
 
+
+
+  
   const browser = await puppeteer.launch({
     args: [
       '--no-sandbox',
@@ -101,10 +104,32 @@ async function sync() {
     }))
   }
 
-  const items = (await tasks.tasks.list({tasklist: tasklistId})).data.items || []
+  let {items, nextPageToken} = (await tasks.tasks.list({
+    tasklist: tasklistId,
+    showCompleted: true,
+    showDeleted: true,
+    showHidden: true
+  })).data
+
+  items = items || []
+  
+  while(nextPageToken != undefined) {
+    let data = (await tasks.tasks.list({
+      tasklist: tasklistId,
+      showCompleted: true,
+      showDeleted: true,
+      showHidden: true,
+      pageToken: nextPageToken,
+      maxResults: 5,
+    })).data
+    items = items.concat(data.items)
+    nextPageToken = data.nextPageToken
+  }
+
   const titles = items.map(e => e.title)
+  const notes = items.map(e => e.notes)
   for (let i = 0; i < data.length; i++) {
-    if (titles.indexOf(data[i].title) < 0) {
+    if (titles.indexOf(data[i].title) < 0 && notes.indexOf(data[i].notes) < 0) {
       await tasks.tasks.insert({
         tasklist: tasklistId,
         resource: {
