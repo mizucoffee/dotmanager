@@ -1,6 +1,6 @@
 {
-    "google-calendar-api-key": "<your-api-key>",
     "dotcampus": {
+        "url": "<dotcampus-url>",
         "id": "<your-id>",
         "password": "<your-password>"
     },
