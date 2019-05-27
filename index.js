@@ -3,6 +3,7 @@ const {
   google
 } = require('googleapis')
 const fs = require('fs-extra')
+const path = require('path')
 const {
   prompt
 } = require('enquirer')
@@ -45,9 +46,6 @@ async function sync() {
 
   const tasklistId = (await tasks.tasklists.list()).data.items.filter(i => i.title == 'dotCampus')[0].id
 
-
-
-  
   const browser = await puppeteer.launch({
     args: [
       '--no-sandbox',
@@ -59,7 +57,7 @@ async function sync() {
     width: 1080,
     height: 1920
   })
-  await page.goto('https://king.kcg.kyoto/campus')
+  await page.goto(path.join(config.get('dotcampus.url'),'/'))
 
   const isLoggedIn = await page.evaluate(() => {
     const node = document.querySelectorAll("#buttonHtmlLogon");
@@ -67,42 +65,12 @@ async function sync() {
   });
 
   if (!isLoggedIn) {
-    // login
     await page.type('#TextLoginID', config.get('dotcampus.id'))
     await page.type('#TextPassword', config.get('dotcampus.password'))
     await page.click('#buttonHtmlLogon')
   }
 
-  await page.goto('https://king.kcg.kyoto/campus/Portal/FullSchedule')
-  await new Promise(res => setTimeout(res, 5000))
-  const list = await page.evaluate(() => {
-    const l = document.querySelector('.fc-view-month>div').childNodes;
-    let list = []
-    l.forEach(e => {
-      const rect = e.getBoundingClientRect()
-      list.push({
-        x: rect.x,
-        y: rect.y
-      })
-    })
-    return list
-  })
-
-  const data = []
-
-  for (let i = 0; i < list.length; i++) {
-    await page.mouse.move(list[i].x + 1, list[i].y + 1)
-    await new Promise(res => setTimeout(res, 200))
-
-    data.push(await page.evaluate(() => {
-      const parent = document.getElementsByClassName('fullcalendar-tooltip')[0]
-      return {
-        title: parent.children[0].children[1].children[0].innerText,
-        notes: parent.children[2].innerText,
-        due: parent.children[2].children[2].innerText.match(/\d\d\/\d\d/)[0]
-      }
-    }))
-  }
+  const data = (await getList(page,false)).concat(await getList(page,true))
 
   let {items, nextPageToken} = (await tasks.tasks.list({
     tasklist: tasklistId,
@@ -112,7 +80,7 @@ async function sync() {
   })).data
 
   items = items || []
-  
+
   while(nextPageToken != undefined) {
     let data = (await tasks.tasks.list({
       tasklist: tasklistId,
@@ -146,11 +114,48 @@ async function sync() {
   browser.close()
 }
 
+async function getList(page, isNext) {
+  await page.goto(path.join(config.get('dotcampus.url'),'Portal/FullSchedule'))
+  await new Promise(res => setTimeout(res, 5000))
+  if(isNext) {
+    await page.click('#fullschedule-next-button')
+    await new Promise(res => setTimeout(res, 5000))
+  }
+  const list = await page.evaluate(() => {
+    const l = document.querySelector('.fc-view-month>div').childNodes;
+    let list = []
+    l.forEach(e => {
+      const rect = e.getBoundingClientRect()
+      list.push({
+        x: rect.x,
+        y: rect.y
+      })
+    })
+    return list
+  })
+
+  const data = []
+
+  for (let i = 0; i < list.length; i++) {
+    await page.mouse.move(list[i].x + 1, list[i].y + 1)
+    await new Promise(res => setTimeout(res, 200))
+
+    data.push(await page.evaluate(() => {
+      const parent = document.getElementsByClassName('fullcalendar-tooltip')[0]
+      return {
+        title: parent.children[0].children[1].children[0].innerText,
+        notes: parent.children[2].innerText,
+        due: parent.children[2].children[2].innerText.match(/\d\d\/\d\d/)[0]
+      }
+    }))
+  }
+  return data
+}
+
 cron.schedule(config.get('cron'), sync, {
   scheduled: true,
   timezone: "Asia/Tokyo"
 })
-
 
 // 認証生成・既に存在する場合は更新
 async function authorize() {
