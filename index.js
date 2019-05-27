@@ -23,6 +23,10 @@ const {
   redirect_uris
 } = credentials.installed
 
+if(config.get('wirepusher') != "") {
+  request('http://wirepusher.com/send?id=' + config.get('wirepusher') + '&title=dotManager&message=' + encodeURIComponent('dotManager起動時通知テストです。') + '%0A' + encodeURIComponent('正常に動作しています。この通知は無視してください。'))
+}
+
 main()
 
 async function main() {
