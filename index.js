@@ -75,7 +75,7 @@ async function sync() {
     await page.click('#buttonHtmlLogon')
   }
 
-  const data = (await getList(page,false)).concat(await getList(page,true))
+  const data = await getList(page,false)
 
   let {items, nextPageToken} = (await tasks.tasks.list({
     tasklist: tasklistId,
