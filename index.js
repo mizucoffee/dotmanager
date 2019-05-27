@@ -10,6 +10,7 @@ const {
 const puppeteer = require('puppeteer')
 const cron = require('node-cron')
 const moment = require('moment-timezone')
+const request = require('request')
 
 if (!fs.pathExistsSync('credentials.json')) {
   console.error('ERROR: credentials.jsonが見つかりません。READMEを参考に入手してください。')
@@ -96,8 +97,10 @@ async function sync() {
 
   const titles = items.map(e => e.title)
   const notes = items.map(e => e.notes)
+  const added = []
   for (let i = 0; i < data.length; i++) {
     if (titles.indexOf(data[i].title) < 0 && notes.indexOf(data[i].notes) < 0) {
+      added.push(data[i])
       await tasks.tasks.insert({
         tasklist: tasklistId,
         resource: {
@@ -107,6 +110,10 @@ async function sync() {
         }
       })
     }
+  }
+
+  if(added.length > 0 && config.get('wirepusher') != "") {
+    request('http://wirepusher.com/send?id=' + config.get('wirepusher') + '&title=dotManager&message=' + encodeURIComponent('スケジュールが更新されました。') + '%0A' + encodeURIComponent('詳しくはTasksアプリで確認してください。'))
   }
 
   console.log('同期処理を実行しました:', moment(new Date()).tz("Asia/Tokyo").format())

@@ -1,4 +1,4 @@
-# dotmanager
+# dotManager
 dotCampus管理システム(非公式)
 
 ## 機能
@@ -26,6 +26,10 @@ dotCampus管理システム(非公式)
 
 ### メレンゲ注意
 分かる人が使ってね。
+
+## 通知について
+dotManagerではAndroidへの通知のみ対応しています。
+通知には[WirePusher](http://wirepusher.com/)を採用しています。
 
 ## 導入
 

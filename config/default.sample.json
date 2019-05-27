@@ -1,4 +1,5 @@
 {
+    "wirepusher": "<wirepusher-id>",
     "dotcampus": {
         "url": "<dotcampus-url>",
         "id": "<your-id>",
