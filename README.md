@@ -31,14 +31,20 @@ dotCampus管理システム(非公式)
 dotManagerではAndroidへの通知のみ対応しています。
 通知には[WirePusher](http://wirepusher.com/)を採用しています。
 
+## iOS Reminders連携について
+ベースはGoogle Tasksです。これは管理に使用している為マストです。     
+追加でiOS Remindersに対応しています。IFTTTを用いて連携しています。     
+value1にタイトル、value2に期限時刻データが入っています。
+
 ## 導入
 
 1. [Google Tasks API Node.js Quickstart](https://developers.google.com/tasks/quickstart/nodejs)を開く
-1. ENABLE THE TASKS CALENDAR API > DOWNLOAD CLIENT CONFIGURATION
-1. configフォルダ内のdefault.sample.jsonをdefault.jsonにコピー
-1. default.jsonを適当な内容に修正
-1. `$ npm i # or $ yarn`
-1. `$ node index.js`
+2. ENABLE THE TASKS CALENDAR API > DOWNLOAD CLIENT CONFIGURATION
+3. credentials.jsonをindex.jsと同じ階層に配置
+4. configフォルダ内のdefault.sample.jsonをdefault.jsonにコピー
+5. default.jsonを適当な内容に修正
+6. `$ npm i # or $ yarn`
+7. `$ node index.js`
 
 ※この導入ではフォアグラウンドで実行されます。各自screenやpm2、Docker等でバックグラウンドに切り替えると運用しやすいかと思います。     
 ※dotCampusのURLは、トップページのURLのPortalの直前までです。https://example.com/aaa/bbb/Portal/...であれば、https://example.com/aaa/bbb/になります。

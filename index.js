@@ -105,6 +105,12 @@ async function sync() {
   for (let i = 0; i < data.length; i++) {
     if (titles.indexOf(data[i].title) < 0 && notes.indexOf(data[i].notes) < 0) {
       added.push(data[i])
+      if(config.get('ifttt') != "") {
+        request.post(config.get('ifttt')).form({
+          value1: `${data[i].title} - ${data[i].notes.split('\n')[0].split(':')[1]}`,
+          value2: `${data[i].due.split('/')[0]}/${data[i].due.split('/')[1]}/${new Date().getFullYear()} at 11:59pm`
+        })
+      }
       await tasks.tasks.insert({
         tasklist: tasklistId,
         resource: {
@@ -121,7 +127,6 @@ async function sync() {
   }
 
   console.log('同期処理を実行しました:', moment(new Date()).tz("Asia/Tokyo").format())
-
   browser.close()
 }
 
