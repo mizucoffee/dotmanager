@@ -29,7 +29,8 @@ if(config.get('wirepusher') != "") {
 if(config.get('ifttt.notification') != "") {
   request.post(config.get('ifttt.notification')).form({
     value1: 'dotCampus',
-    value2: 'dotManager起動時通知テストです。\n正常に動作しています。この通知は無視してください。'
+    value2: 'dotManager起動時通知テストです。\n正常に動作しています。この通知は無視してください。',
+    value3: 'x-apple-reminder://'
   })
 }
 
@@ -134,7 +135,8 @@ async function sync() {
   if(added.length > 0 && config.get('ifttt.notification') != "") {
     request.post(config.get('ifttt.notification')).form({
       value1: 'dotCampus',
-      value2: 'スケジュールが更新されました。\n詳しくはTasksアプリで確認してください。'
+      value2: 'スケジュールが更新されました。\n詳しくはTasksアプリで確認してください。',
+      value3: 'x-apple-reminder://'
     })
   }
 
