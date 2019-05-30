@@ -26,6 +26,12 @@ const {
 if(config.get('wirepusher') != "") {
   request('http://wirepusher.com/send?id=' + config.get('wirepusher') + '&title=dotManager&message=' + encodeURIComponent('dotManager起動時通知テストです。') + '%0A' + encodeURIComponent('正常に動作しています。この通知は無視してください。'))
 }
+if(config.get('ifttt.notification') != "") {
+  request.post(config.get('ifttt.notification')).form({
+    value1: 'dotCampus',
+    value2: 'dotManager起動時通知テストです。\n正常に動作しています。この通知は無視してください。'
+  })
+}
 
 main()
 
@@ -105,8 +111,8 @@ async function sync() {
   for (let i = 0; i < data.length; i++) {
     if (titles.indexOf(data[i].title) < 0 && notes.indexOf(data[i].notes) < 0) {
       added.push(data[i])
-      if(config.get('ifttt') != "") {
-        request.post(config.get('ifttt')).form({
+      if(config.get('ifttt.reminder') != "") {
+        request.post(config.get('ifttt.reminder')).form({
           value1: `${data[i].title} - ${data[i].notes.split('\n')[0].split(':')[1]}`,
           value2: `${data[i].due.split('/')[0]}/${data[i].due.split('/')[1]}/${new Date().getFullYear()} at 11:59pm`
         })
@@ -124,6 +130,12 @@ async function sync() {
 
   if(added.length > 0 && config.get('wirepusher') != "") {
     request('http://wirepusher.com/send?id=' + config.get('wirepusher') + '&title=dotManager&message=' + encodeURIComponent('スケジュールが更新されました。') + '%0A' + encodeURIComponent('詳しくはTasksアプリで確認してください。'))
+  }
+  if(added.length > 0 && config.get('ifttt.notification') != "") {
+    request.post(config.get('ifttt.notification')).form({
+      value1: 'dotCampus',
+      value2: 'スケジュールが更新されました。\n詳しくはTasksアプリで確認してください。'
+    })
   }
 
   console.log('同期処理を実行しました:', moment(new Date()).tz("Asia/Tokyo").format())
