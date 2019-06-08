@@ -1,16 +1,17 @@
 const config = require('config')
-const {
-  google
-} = require('googleapis')
+const google = require('googleapis').google
 const fs = require('fs-extra')
-const path = require('path')
-const {
-  prompt
-} = require('enquirer')
-const puppeteer = require('puppeteer')
+const prompt = require('enquirer').prompt
 const cron = require('node-cron')
 const moment = require('moment-timezone')
 const request = require('request')
+const Store = require('data-store')
+const h2p = require('html2plaintext')
+const path = require('path')
+const store = new Store({
+  path: 'data.json'
+})
+const dotCampus = require('./dotcampus')
 
 if (!fs.pathExistsSync('credentials.json')) {
   console.error('ERROR: credentials.jsonが見つかりません。READMEを参考に入手してください。')
@@ -23,25 +24,29 @@ const {
   redirect_uris
 } = credentials.installed
 
-if(config.get('wirepusher') != "") {
-  request('http://wirepusher.com/send?id=' + config.get('wirepusher') + '&title=dotManager&message=' + encodeURIComponent('dotManager起動時通知テストです。') + '%0A' + encodeURIComponent('正常に動作しています。この通知は無視してください。'))
-}
-if(config.get('ifttt.notification') != "") {
-  request.post(config.get('ifttt.notification')).form({
-    value1: 'dotCampus',
-    value2: 'dotManager起動時通知テストです。\n正常に動作しています。この通知は無視してください。',
-    value3: 'x-apple-reminder://'
-  })
-}
-
 main()
 
 async function main() {
+  const dot = await dotCampus.build(config.get('dotcampus.url'), config.get('dotcampus.id'), config.get('dotcampus.password'))
+  await dot.checkLogin()
+  store.set('uuid', await dot.getUUID())
+
+  console.log('uuid:', store.get('uuid'))
+
+  const ca = new Set(store.get('announcements'))
+  const announcements = (await dot.getAnnouncements()).data
+  announcements.forEach(a => ca.add(a.Id))
+  store.set('announcements',Array.from(ca))
+
+  dot.close()
+
   await authorize()
   await sync()
 }
 
 async function sync() {
+  const dot = await dotCampus.build(config.get('dotcampus.url'), config.get('dotcampus.id'), config.get('dotcampus.password'))
+  await dot.checkLogin()
 
   const tasks = google.tasks({
     version: 'v1',
@@ -58,128 +63,43 @@ async function sync() {
 
   const tasklistId = (await tasks.tasklists.list()).data.items.filter(i => i.title == 'dotCampus')[0].id
 
-  const browser = await puppeteer.launch({
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox'
-    ]
-  })
-  const page = await browser.newPage();
-  await page.setViewport({
-    width: 1080,
-    height: 1920
-  })
-  await page.goto(path.join(config.get('dotcampus.url'),'/'))
+  const current = store.get('events') || []
+  const events = (await dot.getFullEvent(Math.round(moment(new Date()).add(-30,'day').valueOf()/1000)))
+    .filter(e => !current.includes(e.id))
 
-  const isLoggedIn = await page.evaluate(() => {
-    const node = document.querySelectorAll("#buttonHtmlLogon");
-    return node.length ? false : true;
-  });
-
-  if (!isLoggedIn) {
-    await page.type('#TextLoginID', config.get('dotcampus.id'))
-    await page.type('#TextPassword', config.get('dotcampus.password'))
-    await page.click('#buttonHtmlLogon')
-  }
-
-  const data = await getList(page,false)
-
-  let {items, nextPageToken} = (await tasks.tasks.list({
-    tasklist: tasklistId,
-    showCompleted: true,
-    showDeleted: true,
-    showHidden: true
-  })).data
-
-  items = items || []
-
-  while(nextPageToken != undefined) {
-    let data = (await tasks.tasks.list({
-      tasklist: tasklistId,
-      showCompleted: true,
-      showDeleted: true,
-      showHidden: true,
-      pageToken: nextPageToken,
-      maxResults: 5,
-    })).data
-    items = items.concat(data.items)
-    nextPageToken = data.nextPageToken
-  }
-
-  const titles = items.map(e => e.title)
-  const notes = items.map(e => e.notes)
-  const added = []
-  for (let i = 0; i < data.length; i++) {
-    if (titles.indexOf(data[i].title) < 0 && notes.indexOf(data[i].notes) < 0) {
-      added.push(data[i])
-      if(config.get('ifttt.reminder') != "") {
-        request.post(config.get('ifttt.reminder')).form({
-          value1: `${data[i].title} - ${data[i].notes.split('\n')[0].split(':')[1]}`,
-          value2: `${data[i].due.split('/')[0]}/${data[i].due.split('/')[1]}/${new Date().getFullYear()} at 11:59pm`
-        })
-      }
-      await tasks.tasks.insert({
-        tasklist: tasklistId,
-        resource: {
-          title: data[i].title,
-          notes: data[i].notes,
-          due: `${new Date().getFullYear()}-${data[i].due.split('/')[0]}-${data[i].due.split('/')[1]}T00:00:00.000000Z`
-        }
+  for (let e of events) {
+    due = moment(e.end * 1000)
+    if (config.get('ifttt.reminder') != "") {
+      request.post(config.get('ifttt.reminder')).form({
+        value1: `${e.title} - ${e.groupname}`,
+        value2: `${due.format('MM')}/${due.format('DD')}/${due.format('YYYY')} at 11:59pm`
       })
     }
-  }
-
-  if(added.length > 0 && config.get('wirepusher') != "") {
-    request('http://wirepusher.com/send?id=' + config.get('wirepusher') + '&title=dotManager&message=' + encodeURIComponent('スケジュールが更新されました。') + '%0A' + encodeURIComponent('詳しくはTasksアプリで確認してください。'))
-  }
-  if(added.length > 0 && config.get('ifttt.notification') != "") {
-    request.post(config.get('ifttt.notification')).form({
-      value1: 'dotCampus',
-      value2: 'スケジュールが更新されました。\n詳しくはTasksアプリで確認してください。',
-      value3: 'x-apple-reminder://'
-    })
-  }
-
-  console.log('同期処理を実行しました:', moment(new Date()).tz("Asia/Tokyo").format())
-  browser.close()
-}
-
-async function getList(page, isNext) {
-  await page.goto(path.join(config.get('dotcampus.url'),'Portal/FullSchedule'))
-  await new Promise(res => setTimeout(res, 5000))
-  if(isNext) {
-    await page.click('#fullschedule-next-button')
-    await new Promise(res => setTimeout(res, 5000))
-  }
-  const list = await page.evaluate(() => {
-    const l = document.querySelector('.fc-view-month>div').childNodes;
-    let list = []
-    l.forEach(e => {
-      const rect = e.getBoundingClientRect()
-      list.push({
-        x: rect.x,
-        y: rect.y
-      })
-    })
-    return list
-  })
-
-  const data = []
-
-  for (let i = 0; i < list.length; i++) {
-    await page.mouse.move(list[i].x + 1, list[i].y + 1)
-    await new Promise(res => setTimeout(res, 200))
-
-    data.push(await page.evaluate(() => {
-      const parent = document.getElementsByClassName('fullcalendar-tooltip')[0]
-      return {
-        title: parent.children[0].children[1].children[0].innerText,
-        notes: parent.children[2].innerText,
-        due: parent.children[2].children[2].innerText.match(/\d\d\/\d\d/)[0]
+    await tasks.tasks.insert({
+      tasklist: tasklistId,
+      resource: {
+        title: e.title,
+        notes: h2p(e.description),
+        due: `${due.format('YYYY')}-${due.format('MM')}-${due.format('DD')}T00:00:00.000000Z`
       }
-    }))
+    })
+    current.push(e.id)
   }
-  return data
+
+  store.set('events', current)
+
+  if (events.length > 0 && config.get('ifttt.notification') != "")
+    postIFTTT('notification', 'dotCampus - スケジュール更新', 'スケジュールが更新されました。\n詳しくはTasksアプリで確認してください。')
+
+  const currentAnnouncements = store.get('announcements') || []
+  const announcements = (await dot.getAnnouncements()).data.filter(a => !currentAnnouncements.includes(a.Id))
+  for (let a of announcements) {
+    const detail = await dot.getAnnouncementDetail(a.Id)
+    postIFTTT('announcements', 'dotCampus - ' + a.Title, detail.Body, path.join(config.get('dotcampus.url'), '/Portal/TryAnnouncement#/detail/' + a.Id))
+    currentAnnouncements.push(a.Id)
+  }
+  
+  console.log('同期処理を実行しました:', moment(new Date()).tz("Asia/Tokyo").format())
 }
 
 cron.schedule(config.get('cron'), sync, {
@@ -224,4 +144,12 @@ async function refreshOAuth2Client() {
 
   await fs.writeFile('token.json', JSON.stringify(token.credentials))
   return oAuth2Client
+}
+
+function postIFTTT(type, value1, value2, value3) {
+  request.post(config.get(`ifttt.${type}`)).form({
+    value1,
+    value2: value2.replace(/(<br>|<br \/>)/gi, '\n').slice(0, 200),
+    value3
+  })
 }

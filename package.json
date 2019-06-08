@@ -7,12 +7,16 @@
   "license": "MIT",
   "dependencies": {
     "config": "^3.1.0",
+    "data-store": "^3.1.0",
     "enquirer": "^2.3.0",
     "fs-extra": "^8.0.1",
     "googleapis": "^40.0.0",
+    "html2plaintext": "^2.1.2",
+    "moment": "^2.24.0",
     "moment-timezone": "^0.5.25",
     "node-cron": "^2.0.3",
     "puppeteer": "^1.16.0",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "unhtml": "^0.1.0"
   }
 }

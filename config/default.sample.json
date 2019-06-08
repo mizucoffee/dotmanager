@@ -6,8 +6,9 @@
         "password": "<your-password>"
     },
     "ifttt": {
-      "reminder": "<your-ifttt-reminder-url>",
-      "notification": "<your-ifttt-notification-url>"
+      "reminder": "<your-ifttt-url>",
+      "notification": "<your-ifttt-url>",
+      "announcements": "<your-ifttt-url>"
     },
     "cron": "0 7,19 * * *"
 }
