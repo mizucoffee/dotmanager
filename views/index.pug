@@ -1,0 +1,41 @@
+html(lang="ja")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    meta(http-equiv="X-UA-Compatible" content="ie=edge")
+    link(rel="stylesheet", href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css", integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T", crossorigin="anonymous")
+    script(src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous")
+    script(src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous")
+    title dotManager
+  body
+    div.container
+      img(src="/dotmanager.svg", style="display: block; margin: 16px auto; max-width: 512px")
+      h2 IFTTTの設定
+      p 下の初期設定手順書ボタンからPDFファイルを開き、手順に従って設定をしてください。
+
+      a.btn.btn-primary(href="/dotmanager.pdf" target="_blank") 初期設定手順書
+
+      p その後、IFTTTアプリ内Applet一覧画面の上部にあるServiceをタップし、Webhooksを選択します。<br>そして、画面中央にあるDocumentationをタップし、表示されたKeyをコピーしておきます。
+      br
+
+      h2 登録フォーム
+      form(action="/" method="post")
+        .form-group
+            label(for="url") dotCampus URL
+            input#url.form-control(name="url" type="url" placeholder="https://example.com/dotCampus/" required)
+            small.form-text.text-muted Portalの直前までのURLを入力してください
+        div.form-row
+          div.col.form-group.col-md-6.col-12
+            label(for="id") ログインID
+            input#id.form-control(name="id" type="text" placeholder="loginid" required)
+            small.form-text.text-muted dotCampusで使用しているログインID
+          div.col.form-group.col-md-6.col-12
+            label(for="pw") パスワード
+            input#pw.form-control(name="pw" type="password" placeholder="password" required)
+            small.form-text.text-muted dotCampusで使用しているパスワード
+        .form-group
+            label(for="ifttt") IFTTT Key
+            input#ifttt.form-control(name="ifttt" type="text" placeholder="your key" required)
+            small.form-text.text-muted さっきコピーしたKey
+        button.btn.btn-primary(type="submit" style="display:block; margin: 0 auto; font-size: 16pt;") 登録

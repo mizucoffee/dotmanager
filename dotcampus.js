@@ -1,25 +1,23 @@
-const puppeteer = require('puppeteer')
-const path = require('path')
-const url = require('url')
 const moment = require('moment')
+const axios = require('axios')
+const parse = require('node-html-parser').parse
+const querystring = require('querystring')
+const axiosCookieJarSupport = require('axios-cookiejar-support').default
+const tough = require('tough-cookie')
+
+const dotcampus = axios.create({
+    jar: new tough.CookieJar(),
+    withCredentials: true
+})
+
+axiosCookieJarSupport(dotcampus)
+dotcampus.defaults.jar = new tough.CookieJar()
 
 class dotCampus {
-    constructor(page, url, id, pw) {
-        if (typeof page === 'undefined') {
-            throw new Error('await dotCampus.build()を使用してください。')
-        }
-        this.page = page
-        this.url = url
+    constructor(url, id, pw) {
         this.id = id
         this.pw = pw
-    }
-
-    static build(url, id, pw) {
-        return puppeteer.launch({
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            })
-            .then(browser => browser.newPage())
-            .then(page => new dotCampus(page, url, id, pw))
+        dotcampus.defaults.baseURL = url
     }
 
     async checkLogin() {
@@ -27,61 +25,60 @@ class dotCampus {
     }
 
     async login() {
-        await this.page.type('#TextLoginID', this.id)
-        await this.page.type('#TextPassword', this.pw)
-        await this.page.click('#buttonHtmlLogon')
+        const body = parse((await dotcampus.get('/Secure/Login.aspx?ReturnUrl=%2Fcampus%2FPortal%2FHome')).data)
+        const data = {
+            __VIEWSTATE: body.querySelector('#__VIEWSTATE').attributes.value,
+            __VIEWSTATEGENERATOR: body.querySelector('#__VIEWSTATEGENERATOR').attributes.value,
+            __EVENTVALIDATION: body.querySelector('#__EVENTVALIDATION').attributes.value,
+            buttonHtmlLogon: body.querySelector('#buttonHtmlLogon').attributes.value,
+            TextLoginID: this.id,
+            TextPassword: this.pw
+        }
+
+        await dotcampus.post('/Secure/Login.aspx?ReturnUrl=%2fcampus%2fPortal%2fHome', querystring.stringify(data))
         console.log('ログインしました')
     }
 
     async isLoggedIn() {
-        await this.page.goto(path.join(this.url, '/'))
-
-        return await this.page.evaluate(() => {
-            const node = document.querySelectorAll("#buttonHtmlLogon")
-            return node.length ? false : true
-        })
-    }
-
-    async screenshot() {
-        await this.page.screenshot({
-            path: `${new Date().getTime()}.png`
-        })
+        return (await dotcampus.get('/Portal/Home', {
+            maxRedirects: 0,
+            validateStatus: status => status >= 200 && status < 400
+        })).status == 200
     }
 
     async getUUID() {
-        await this.page.goto(url.resolve(this.url, 'Community/Profile'))
-        return await this.page.evaluate(() => {
-            const photo = document.querySelector('#profile-img-photo')
-            return photo.src.split('/')[photo.src.split('/').length - 1]
-        })
+        const body = parse((await dotcampus.get('/Community/Profile')).data)
+        const url = body.querySelector('#profile-img-photo').attributes.src.split('/')
+        return url[url.length - 1]
     }
 
+    // 自分の予定（カレンダー）
     async getFullEvent(start) {
-        await this.page.goto(path.join(this.url, '/Portal/FullSchedule/FetchEvents?id=&_=' + new Date().getTime()))
-        let events = JSON.parse(await this.page.evaluate(() => document.querySelector('body').innerText))
+        let events = (await dotcampus.get('/Portal/FullSchedule/FetchEvents?id=&_=' + new Date().getTime())).data
         return events.filter(e => e.start >= start)
     }
 
+    // 学校からのお知らせ
     async getAnnouncements() {
         const now = new Date()
-        await this.page.goto(path.join(this.url, '/Portal/TryAnnouncement/GetAnnouncements?' +
+        return (await dotcampus.get('/Portal/TryAnnouncement/GetAnnouncements?' +
             'categoryId=0&' +
             'passdaysId=0&' +
             'isCustomSearch=false' +
             '&customSearchCategoryId=0' +
             '&keyword=' +
             `&startIsoDate=${moment(now).month(now.getMonth()-3).hour(24).minute(0).seconds(0).milliseconds(909).utc().toISOString()}` +
-            `&endIsoDate=${moment(now).hour(23).minute(59).seconds(59).milliseconds(909).utc().toISOString()}`))
-        return JSON.parse(await this.page.evaluate(() => document.querySelector('body').innerText))
+            `&endIsoDate=${moment(now).hour(23).minute(59).seconds(59).milliseconds(909).utc().toISOString()}`)).data.data
     }
 
     async getAnnouncementDetail(id) {
-        await this.page.goto(path.join(this.url, '/Portal/TryAnnouncement/GetAnnouncement?aId=' + id + '&_=' + new Date().getTime()))
-        return JSON.parse(await this.page.evaluate(() => document.querySelector('body').innerText))
+        console.log(id)
+        return (await dotcampus.get('/Portal/TryAnnouncement/GetAnnouncement?aId=' + id + '&_=' + new Date().getTime())).data
     }
 
-    async close() {
-        this.page.browser().close()
+    // 自分宛ての通知
+    async getNotifications() {
+        return (await dotcampus.get('/Mvc/Notification/GetNotifications')).data.data
     }
 }
 
