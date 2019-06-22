@@ -58,7 +58,7 @@ value1にタイトル、value2に期限時刻データが入っています。
 7. `$ node index.js`
 
 ※この導入ではフォアグラウンドで実行されます。各自screenやpm2、Docker等でバックグラウンドに切り替えると運用しやすいかと思います。     
-※dotCampusのURLは、トップページのURLのPortalの直前までです。https://example.com/aaa/bbb/Portal/...であれば、https://example.com/aaa/bbb/になります。
+※dotCampusのURLは、トップページのURLのPortalの直前までです。<a href="https://example.com/aaa/bbb/Portal/...">https://example.com/aaa/bbb/Portal/...</a>であれば、<a href="https://example.com/aaa/bbb/">https://example.com/aaa/bbb/</a>になります。
 
 ## アップデートについて
 作者が不便だと思った時に機能が増えます。
