@@ -56,7 +56,7 @@ app.post('/', (req, res) => {
     config.set('id', req.body.id)
     config.set('pw', req.body.pw)
     config.set('ifttt', req.body.ifttt)
-    config.set('cron', '7,19')
+    config.set('cron', '0 7,19 * * *')
     spinner.succeed('設定完了')
     res.render('success')
     console.log()

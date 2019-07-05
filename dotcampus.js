@@ -72,7 +72,6 @@ class dotCampus {
     }
 
     async getAnnouncementDetail(id) {
-        console.log(id)
         return (await dotcampus.get('/Portal/TryAnnouncement/GetAnnouncement?aId=' + id + '&_=' + new Date().getTime())).data
     }
 
@@ -80,6 +79,13 @@ class dotCampus {
     async getNotifications() {
         return (await dotcampus.get('/Mvc/Notification/GetNotifications')).data.data
     }
+
+    async getTaskDetail(groupId,itemId) {
+        const body = parse((await dotcampus.get(`/Course/${groupId}/21/`)).data)
+        const token = body.querySelector("[name=__GroupAccessToken]").attributes.value
+        return (await dotcampus.get(`/Mvc/Manavi/GetTask?tId=${itemId}&p=${new Date().getTime()}&gToken=${encodeURIComponent(token)}`)).data
+    }
+
 }
 
 module.exports = dotCampus

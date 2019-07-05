@@ -13,7 +13,6 @@ const config = new Store({
   path: 'config.json'
 })
 const dotCampus = require('./dotcampus')
-const minute = Math.floor(Math.random() * 60)
 
 if (!fs.existsSync('config.json')) {
   console.log('設定ファイルが存在しません。')
@@ -29,11 +28,6 @@ async function main() {
 
   store.set('uuid', await dot.getUUID())
   console.log('uuid:', store.get('uuid'))
-
-  const ca = new Set(store.get('notifications'))
-  const notifications = (await dot.getNotifications())
-  notifications.forEach(a => ca.add(a.Id))
-  store.set('notifications', Array.from(ca))
 
   postIFTTT('dm_notification', 'dotManager - 起動通知', '正常に起動しました。この通知は無視してください。')
 
@@ -60,27 +54,35 @@ async function sync() {
   store.set('events', current)
 
   if (events.length > 0)
-    postIFTTT('dm_notification', 'dotCampus - スケジュール更新', 'スケジュールが更新されました。\n詳しくはTasksアプリで確認してください。')
+    postIFTTT('dm_notification', 'dotCampus - スケジュール更新', 'スケジュールが更新されました。\n詳細はリマインダーアプリで確認してください。')
 
   const currentAnnouncements = store.get('notifications') || []
   const announcements = (await dot.getNotifications()).filter(a => !currentAnnouncements.includes(a.Id))
   for (let a of announcements) {
-    let detail = (await dot.getAnnouncementDetail(a.ItemId)).Body
+    let title
+    let detail
     let url
 
     switch (a.NoticeType) {
       case 1:
-      case 36:
+          title = 'dotCampus - ' + a.Title
+        detail = (await dot.getAnnouncementDetail(a.ItemId)).Body
         url = urljoin(config.get('url'), `/Course/${a.FromGroupId}/65/#/detail/${a.ItemId}`)
         break
       case 2:
+        title = 'dotCampus - ' + a.Title
+        detail = (await dot.getAnnouncementDetail(a.ItemId)).Body
         url = urljoin(config.get('url'), `/Portal/TryAnnouncement#/detail/${a.ItemId}`)
         break
-      default:
-        url = ''
+      case 36:
+        title = `dotCampus - 教材更新通知 ${a.CourseName}`
+        detail = (await dot.getTaskDetail(a.FromGroupId,a.ItemId)).Description || "本文無し"
+        url = urljoin(config.get('url'), `/Course/${a.FromGroupId}/21/#/detail/${a.TaskBlockId}/${a.ItemID}`)
         break
+      default:
+        continue
     }
-    postIFTTT('dm_notification', 'dotCampus - ' + a.Title, detail, url)
+    postIFTTT('dm_notification', title, detail, url)
     currentAnnouncements.push(a.Id)
 
     store.set('notifications', currentAnnouncements)
@@ -89,7 +91,7 @@ async function sync() {
   console.log('同期処理を実行しました:', moment(new Date()).tz("Asia/Tokyo").format())
 }
 
-cron.schedule(`${minute} ${config.get('cron')} * * *`, sync, {
+cron.schedule(`${config.get('cron')}`, sync, {
   scheduled: true,
   timezone: "Asia/Tokyo"
 })
@@ -97,7 +99,7 @@ cron.schedule(`${minute} ${config.get('cron')} * * *`, sync, {
 function postIFTTT(event, value1, value2 = "", value3) {
   axios.post(`https://maker.ifttt.com/trigger/${event}/with/key/${config.get(`ifttt`)}`, querystring.stringify({
     value1,
-    value2: value2.replace(/(<br>|<br \/>)/gi, '\n').slice(0, 200),
+    value2: h2p(value2).slice(0, 200),
     value3
   }))
 }
