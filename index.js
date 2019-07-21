@@ -46,7 +46,7 @@ async function sync() {
     due = moment(e.end * 1000)
     postIFTTT('dm_reminder',
       `${e.title} - ${e.groupname}`,
-      `${due.format('MM')}/${due.format('DD')}/${due.format('YYYY')} at 11:59pm`,
+      `${due.format('MM')}/${due.format('DD')}/${due.format('YYYY')}`,
       h2p(e.description))
     current.push(e.id)
   }
