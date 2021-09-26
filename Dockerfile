@@ -1,7 +1,5 @@
 FROM node
 
-ENV PORT 3000
-
 RUN git clone https://github.com/mizucoffee/dotmanager.git /dotmanager
 WORKDIR /dotmanager
 
