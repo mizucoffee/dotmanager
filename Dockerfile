@@ -12,7 +12,8 @@ RUN apt-get update && \
   libnss3 fonts-ipafont-gothic fonts-ipafont-mincho
 
 WORKDIR /dotmanager
-RUN npm install
-RUN npm run build
+RUN npm install && \
+  npm run build && \
+  npx prisma generate 
 
 CMD ["node", "dist/index.js"]
