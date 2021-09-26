@@ -13,5 +13,6 @@ RUN apt-get update && \
 
 WORKDIR /dotmanager
 RUN npm install
+RUN npm run build
 
-CMD ["node", "index.js"]
+CMD ["node", "dist/index.js"]
