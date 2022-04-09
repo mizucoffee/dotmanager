@@ -27,7 +27,7 @@
     "fs-extra": "^8.0.1",
     "html2plaintext": "^2.1.2",
     "ip": "^1.1.5",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "moment-timezone": "^0.5.25",
     "node-cron": "^3.0.0",
     "node-html-parser": "^1.1.15",
